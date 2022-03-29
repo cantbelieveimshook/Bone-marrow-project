@@ -1,30 +1,4 @@
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw 
-from numpy import asarray
-from google.colab import drive
-import torch
-from torch import nn
-from torch.utils.data import Dataset
-import torchvision
-import torchvision.transforms as transforms
-import torch.nn.functional as F
-from math import sqrt
-import sklearn
-from sklearn import cluster
-from sklearn.cluster import KMeans
-from sklearn.model_selection import train_test_split
-from sklearn import preprocessing
-import tensorflow as tf 
-from tensorflow import keras
-from keras import layers
-from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Activation, ReLU
-from tensorflow.keras.layers import BatchNormalization, Conv2DTranspose, Concatenate
-from tensorflow.keras.models import Model, Sequential
-import os
-from os import listdir
-import torch.optim as optim
+from dataloader import *
 
 # based on https://medium.com/analytics-vidhya/unet-implementation-in-pytorch-idiot-developer-da40d955f201
 
