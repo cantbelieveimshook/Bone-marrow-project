@@ -77,33 +77,89 @@ dataset=BoneMarrowDataset('dataset_info.csv')
 train, test = train_test_split(dataset, test_size = 0.1, random_state = 1)
 
 # taken from https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial and modified a bit so it would work
-class Net(nn.Module):
-    def __init__(self):
+class conv_block(nn.Module):
+    def __init__(self, in_layers, out_layers):
         super().__init__()
-        self.conv1 = nn.Conv2d(3, 6, 3) # modified, was originally 3, 6, 5. shrunk kernel size from 5 to 3.
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
+        self.conv1 = nn.Conv2d(in_layers, out_layers, 3, padding = 1) # modified, was originally 3, 6, 5. shrunk kernel size from 5 to 3.
+        self.bn1 = nn.BatchNorm2d(out_layers)
+        self.conv2 = nn.Conv2d(out_layers, out_layers, 3, padding = 1)
+        self.bn2 = nn.BatchNorm2d(out_layers)
 
     def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = torch.flatten(x, 1) # flatten all dimensions except batch, which is the first dimension
-        x = F.relu(self.fc1(x.reshape(144, 400))) # reshaped because for some reason, the dimensions otherwise did not work
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x.reshape(1, 1440) # reshaped to be a vector
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = F.relu(self.bn2(self.conv2(x)))
+        return x
+
+
+class encoder(nn.Module):
+  def __init__(self, in_layers, out_layers):
+    super().__init__()
+    self.conv = conv_block(in_layers, out_layers)
+    self.pool = nn.MaxPool2d((2, 2))
+  
+  def forward(self, inputs):
+    x = self.conv(inputs)
+    pool = self.pool(x)
+    return x, pool
+
+class decoder(nn.Module):
+    def __init__(self, in_layers, out_layers):
+        super().__init__()
+        self.up = nn.ConvTranspose2d(in_layers, out_layers, kernel_size = 2, stride = 2, padding = 0)
+        self.conv = conv_block(out_layers + out_layers, out_layers)
+    
+    def forward(self, inputs, skip):
+        x = self.up(inputs)
+        print(np.shape(x))
+        x = torch.cat([x, skip], axis = 1)
+        x = self.conv(x)
+        return x
+
+class Net(nn.Module):
+  def __init__(self):
+    super().__init__()
+    self.e1 = encoder(3, 64)
+    self.e2 = encoder(64, 128)
+    self.e3 = encoder(128, 256)
+    self.e4 = encoder(256, 512)
+    
+    self.b = conv_block(512, 1024)
+    
+    self.d1 = decoder(1024, 512)
+    self.d2 = decoder(512, 256)
+    self.d3 = decoder(256, 128)
+    self.d4 = decoder(128, 64)
+    
+    self.outputs = nn.Conv2d(64, 1, kernel_size = 1, padding = 0)
+
+  def forward(self, inputs):
+    s1, p1 = self.e1(inputs)
+    s2, p2 = self.e2(p1)
+    s3, p3 = self.e3(p2)
+    s4, p4 = self.e4(p3)
+    
+    b = self.b(p4)
+
+    d1 = self.d1(b, s4)
+    d2 = self.d2(d1, s3)
+    d3 = self.d3(d2, s2)
+    d4 = self.d4(d3, s1)
+
+    outputs = self.outputs(d4)
+
+    return outputs
 
 
 net = Net()
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-labels = ['ABE', 'ART', 'BLA', 'EBO', 'EOS', 'FGC', 'HAC', 'KSC', 'LYI', 'LYT', 'MMZ', 'MON', 'MYB', 'NGB', 'NGS', 'NIF', 'OTH', 'PEB', 'PLM', 'PMO']
+labels = ['ABE', 'ART', 'BLA', 'EBO', 'FGC', 'EOS', 'HAC', 'KSC', 'LYI', 'LYT', 'NGS', 'NGB', 'NIF', 'MYB', 'MON', 'MMZ', 'PEB', 'PLM', 'PMO', 'OTH']
 le = preprocessing.LabelEncoder()
-le.fit(labels)
+encoder = preprocessing.OneHotEncoder()
+labels = le.fit(labels)
+# encoder.fit(labels.reshape(-1, 1))
+# labels = encoder.transform(labels.reshape(-1, 1))
 
 for epoch in range(2):  # loop over the dataset multiple times
 
@@ -113,6 +169,8 @@ for epoch in range(2):  # loop over the dataset multiple times
         inputs, label = data
         inputs = inputs.float()
         label = le.transform([label])
+        encoder.fit(label.reshape(-1, 1))
+        label = encoder.transform(label.reshape(-1, 1))
 
         # zero the parameter gradients
         optimizer.zero_grad()
