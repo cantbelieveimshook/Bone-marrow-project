@@ -25,6 +25,7 @@ from tensorflow.keras.models import Model, Sequential
 import os
 from os import listdir
 import torch.optim as optim
+from UNET import *
 
 # loading all image paths into list
 # can be used for any any amount of nested folders (hopefully, as long as it works properly)
