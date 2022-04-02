@@ -16,6 +16,8 @@ from sklearn import cluster
 from sklearn.cluster import KMeans
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
+from skimage.transform import resize
+from sklearn.preprocessing import OneHotEncoder
 import tensorflow as tf 
 from tensorflow import keras
 from keras import layers
@@ -26,6 +28,7 @@ import os
 from os import listdir
 import torch.optim as optim
 
+
 class BoneMarrowDataset(Dataset):
   def __init__(self, dataset_info_path):
     self.dataset_info_path = dataset_info_path
@@ -33,4 +36,5 @@ class BoneMarrowDataset(Dataset):
   def __len__(self):
     return self.df.shape[0]
   def __getitem__(self, idx):
-    return torch.from_numpy(plt.imread(self.df.iloc[idx, 0]).transpose(2, 0, 1).reshape(1, 3, 250, 250)/255), self.df.iloc[idx, 1]
+    return torch.from_numpy(plt.imread(self.df.iloc[idx, 0]).transpose(2, 0, 1).reshape(3, 250, 250)/255), self.df.iloc[idx, 1]
+ 
