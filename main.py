@@ -10,7 +10,6 @@ labels = ['ABE', 'ART', 'BLA', 'EBO', 'EOS', 'FGC', 'HAC', 'KSC', 'LYI', 'LYT', 
 # currently modified to only add the first five image paths from each folder
 # labels are currently unfortunately hardcoded because idk how else to get the labels from the images
 def loadimagepaths(folder, images = []):
-  i = 0
   for data in os.listdir(folder):
     subfolder = folder + '/' + data
     if (folder + '/.ipynb_checkpoints') in os.listdir(folder):
@@ -18,11 +17,8 @@ def loadimagepaths(folder, images = []):
     if data[-4:] == '.jpg':
       images.append(subfolder)
       label = subfolder[55:58]
-      i += 1
     else: 
       loadimagepaths(subfolder, images)
-    if i >= 10:
-      break
   return images
 
 all_image_paths = loadimagepaths('/content/drive/Shareddrives/Bone Marrow Classification')
