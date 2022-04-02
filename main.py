@@ -41,31 +41,32 @@ dataset=BoneMarrowDataset('dataset_info.csv')
 
 train, test = train_test_split(dataset, test_size = 0.1, random_state = 1)
 
+trainloader = torch.utils.data.DataLoader(train, batch_size = 4,
+                                          shuffle=False, num_workers=2)
+testloader = torch.utils.data.DataLoader(test, batch_size=4,
+                                         shuffle=False, num_workers=2)
+
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-labels = ['ABE', 'ART', 'BLA', 'EBO', 'FGC', 'EOS', 'HAC', 'KSC', 'LYI', 'LYT', 'NGS', 'NGB', 'NIF', 'MYB', 'MON', 'MMZ', 'PEB', 'PLM', 'PMO', 'OTH']
+labels = ['ABE', 'ART', 'BLA', 'EBO', 'EOS', 'FGC', 'HAC', 'KSC', 'LYI', 'LYT', 'MMZ', 'MON', 'MYB', 'NGB', 'NGS', 'NIF', 'OTH', 'PEB', 'PLM', 'PMO']
 le = preprocessing.LabelEncoder()
-encoder = preprocessing.OneHotEncoder()
-labels = le.fit(labels)
-# encoder.fit(labels.reshape(-1, 1))
-# labels = encoder.transform(labels.reshape(-1, 1))
+le.fit(labels)
 
-for epoch in range(2):  # loop over the dataset multiple times
+for epoch in range(20):  # loop over the dataset multiple times
 
     running_loss = 0.0
-    for i, data in enumerate(train, 0):
+    for i, data in enumerate(trainloader, 0):
         # get the inputs; data is a list of [inputs, labels]
         inputs, label = data
         inputs = inputs.float()
-        label = le.transform([label])
-        encoder.fit(label.reshape(-1, 1))
-        label = encoder.transform(label.reshape(-1, 1))
+        label = le.transform(label) 
 
         # zero the parameter gradients
         optimizer.zero_grad()
 
         # forward + backward + optimize
         outputs = net(inputs)
+
         loss = criterion(outputs, torch.as_tensor(label))
         loss.backward()
         optimizer.step()
@@ -78,14 +79,16 @@ for epoch in range(2):  # loop over the dataset multiple times
 
 print('B)')
 
+import torch
+
 correct = 0
 total = 0
 # since we're not training, we don't need to calculate the gradients for our outputs
 with torch.no_grad():
-    for data in test:
+    for data in testloader:
         inputs, label = data
         inputs = inputs.float()
-        label = torch.as_tensor(le.transform([label]))
+        label = torch.as_tensor(le.transform(np.array(label)))
         # calculate outputs by running images through the network
         outputs = net(inputs)
         # the class with the highest energy is what we choose as prediction
@@ -93,7 +96,7 @@ with torch.no_grad():
         total += label.size(0)
         correct += (predicted == label).sum().item()
 
-print(f'Accuracy of the network on the 10000 test images: {100 * correct // total} %')
+print(f'Accuracy of the network on the 1738 test images: {100 * correct // total} %')
 
 # prepare to count predictions for each class
 correct_pred = {classname: 0 for classname in labels}
@@ -101,10 +104,10 @@ total_pred = {classname: 0 for classname in labels}
 
 # again no gradients needed
 with torch.no_grad():
-    for data in test:
+    for data in testloader:
         inputs, classifications = data
         inputs = inputs.float()
-        classifications = torch.as_tensor(le.transform([classifications]))
+        classifications = torch.as_tensor(le.transform(classifications))
         outputs = net(inputs)
         _, predictions = torch.max(outputs, 1)
         # collect the correct predictions for each class
@@ -113,11 +116,12 @@ with torch.no_grad():
                 correct_pred[labels[label]] += 1
             total_pred[labels[label]] += 1
 
+
 # print accuracy for each class
 for classname, correct_count in correct_pred.items():
   if total_pred[classname] != 0:
     accuracy = 100 * float(correct_count) / total_pred[classname]
-    print(f'Accuracy for class: {classname:5s} is {accuracy:.1f} %')
+    print(f'Accuracy for class: {classname:5s} is {accuracy:.1f} %'
   else:
     print(f'No predictions for this class: {classname}')
 
