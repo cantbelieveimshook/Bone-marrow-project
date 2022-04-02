@@ -1,75 +1,23 @@
 from dataloader import *
 
-# based on https://medium.com/analytics-vidhya/unet-implementation-in-pytorch-idiot-developer-da40d955f201
-
-class conv_block(nn.Module):
-    def __init__(self, in_layers, out_layers):
+class Net(nn.Module):
+    def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(in_layers, out_layers, 3, padding = 1) # modified, was originally 3, 6, 5. shrunk kernel size from 5 to 3.
-        self.bn1 = nn.BatchNorm2d(out_layers)
-        self.conv2 = nn.Conv2d(out_layers, out_layers, 3, padding = 1)
-        self.bn2 = nn.BatchNorm2d(out_layers)
+        self.conv1 = nn.Conv2d(3, 6, 3)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(16 * 60 * 60, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 21)
 
     def forward(self, x):
-        x = F.relu(self.bn1(self.conv1(x)))
-        x = F.relu(self.bn2(self.conv2(x)))
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = torch.flatten(x, 1) # flatten all dimensions except batch, which is the first dimension
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
         return x
 
 
-class encoder(nn.Module):
-  def __init__(self, in_layers, out_layers):
-    super().__init__()
-    self.conv = conv_block(in_layers, out_layers)
-    self.pool = nn.MaxPool2d((2, 2))
-  
-  def forward(self, inputs):
-    x = self.conv(inputs)
-    pool = self.pool(x)
-    return x, pool
-
-class decoder(nn.Module):
-    def __init__(self, in_layers, out_layers):
-        super().__init__()
-        self.up = nn.ConvTranspose2d(in_layers, out_layers, kernel_size = 2, stride = 2, padding = 0)
-        self.conv = conv_block(out_layers + out_layers, out_layers)
-    
-    def forward(self, inputs, skip):
-        x = self.up(inputs)
-        print(np.shape(x))
-        x = torch.cat([x, skip], axis = 1)
-        x = self.conv(x)
-        return x
-
-class Net(nn.Module):
-  def __init__(self):
-    super().__init__()
-    self.e1 = encoder(3, 64)
-    self.e2 = encoder(64, 128)
-    self.e3 = encoder(128, 256)
-    self.e4 = encoder(256, 512)
-    
-    self.b = conv_block(512, 1024)
-    
-    self.d1 = decoder(1024, 512)
-    self.d2 = decoder(512, 256)
-    self.d3 = decoder(256, 128)
-    self.d4 = decoder(128, 64)
-    
-    self.outputs = nn.Conv2d(64, 1, kernel_size = 1, padding = 0)
-
-  def forward(self, inputs):
-    s1, p1 = self.e1(inputs)
-    s2, p2 = self.e2(p1)
-    s3, p3 = self.e3(p2)
-    s4, p4 = self.e4(p3)
-    
-    b = self.b(p4)
-
-    d1 = self.d1(b, s4)
-    d2 = self.d2(d1, s3)
-    d3 = self.d3(d2, s2)
-    d4 = self.d4(d3, s1)
-
-    outputs = self.outputs(d4)
-
-    return outputs
+net = Net()
