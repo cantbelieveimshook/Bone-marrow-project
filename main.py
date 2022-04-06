@@ -1,4 +1,4 @@
-from UNET import *
+from net import *
 
 # loading all image paths into list
 # can be used for any any amount of nested folders (hopefully, as long as it works properly)
