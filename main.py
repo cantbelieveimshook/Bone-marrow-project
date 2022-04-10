@@ -16,7 +16,6 @@ def loadimagepaths(folder, images = []):
       os.listdir(folder).remove(folder + '/.ipynb_checkpoints')
     if data[-4:] == '.jpg':
       images.append(subfolder)
-      label = subfolder[55:58]
     else: 
       loadimagepaths(subfolder, images)
   return images
@@ -28,7 +27,7 @@ f = open('./dataset_info.csv', 'a')
 f.write("Path, Label\n")
 
 for path in all_image_paths:
-  label = path[55:58]
+  label = path[len(mainfolder)+1:len(mainfolder)+4]
   f.write(path + ',' + label + '\n')
 
 f.close()
