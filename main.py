@@ -23,7 +23,7 @@ def loadimagepaths(folder, images = []):
 all_image_paths = loadimagepaths(mainfolder)
 
 # writing image paths and labels onto csv file
-f = open('./dataset_info.csv', 'a')
+f = open('./dataset_info.csv', 'w')
 f.write("Path, Label\n")
 
 for path in all_image_paths:
