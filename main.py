@@ -21,7 +21,7 @@ def loadimagepaths(folder, images = []):
       loadimagepaths(subfolder, images)
   return images
 
-all_image_paths = loadimagepaths('/content/drive/Shareddrives/Bone Marrow Classification')
+all_image_paths = loadimagepaths(mainfolder)
 
 # writing image paths and labels onto csv file
 f = open('./dataset_info.csv', 'a')
