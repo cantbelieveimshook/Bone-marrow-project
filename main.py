@@ -24,7 +24,7 @@ all_image_paths = loadimagepaths(mainfolder)
 
 # writing image paths and labels onto csv file
 f = open('./dataset_info.csv', 'w')
-f.write("Path, Label\n")
+f.write("Path,Label\n")
 
 for path in all_image_paths:
   label = path[len(mainfolder)+1:len(mainfolder)+4]
